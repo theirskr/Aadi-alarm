@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SyncConnect 🧿</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+
+    <div class="glass-card" id="mainCard">
+        <h1>SYNC</h1>
+        <div id="clock" class="time-display">00:00</div>
+        
+        <div id="controls">
+            <input type="time" id="alarmTime" class="time-input" style="display:none;">
+            <button class="btn" id="mainBtn" onclick="handleAction()">Initialize System</button>
+        </div>
+        
+        <div class="status" id="statusLine">System Standby</div>
+    </div>
+
+    <audio id="alarmAudio" src="https://assets.mixkit.co/sfx/preview/mixkit-slow-morning-alarm-614.mp3" loop></audio>
+
+    <script>
+        let isController = false;
+
+        // Clock Update Logic
+        setInterval(() => {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('clock').innerText = `${hours}:${minutes}`;
+            checkAlarm(hours, minutes);
+        }, 1000);
+
+        function handleAction() {
+            const btn = document.getElementById('mainBtn');
+            const input = document.getElementById('alarmTime');
+            
+            if(!isController) {
+                isController = true;
+                btn.innerText = "Set Remote Alarm";
+                input.style.display = "block";
+                document.getElementById('statusLine').innerText = "Controller Mode Active";
+            } else {
+                saveAlarm(input.value);
+            }
+        }
+
+        function saveAlarm(time) {
+            if(!time) return alert("Select a time first");
+            localStorage.setItem('scheduledAlarm', time);
+            document.getElementById('statusLine').innerText = `Sync Locked for ${time}`;
+            document.getElementById('mainBtn').innerText = "Update Alarm";
+        }
+
+        function checkAlarm(h, m) {
+            const scheduled = localStorage.getItem('scheduledAlarm');
+            const current = `${h}:${m}`;
+            
+            if(scheduled === current) {
+                triggerAlarm();
+            }
+        }
+
+        function triggerAlarm() {
+            const audio = document.getElementById('alarmAudio');
+            const card = document.getElementById('mainCard');
+            
+            audio.play();
+            card.classList.add('alarm-active');
+            document.getElementById('statusLine').innerText = "WAKE UP 🧿";
+            
+            if (navigator.vibrate) {
+                navigator.vibrate([500, 300, 500, 300, 500]);
+            }
+        }
+
+        // Register Service Worker for Background Tasks
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js');
+            });
+        }
+    </script>
+</body>
+</html>
